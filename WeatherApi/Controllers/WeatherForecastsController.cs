@@ -54,53 +54,34 @@ namespace WeatherApi.Controllers
                 return NotFound();
             }
 
-            var requestUri = string.Format(
-                "https://api.open-meteo.com/v1/forecast?latitude={0}&longitude={1}",
-                geoPlace.Latitude,
-                geoPlace.Longitude);
-
-            requestUri += "&current=temperature_2m," +
-                "relative_humidity_2m," +
-                "apparent_temperature," +
-                "rain," +
-                "snowfall," +
-                "cloud_cover," +
-                "wind_speed_10m," +
-                "wind_direction_10m";
-
             try
             {
-                var httpResponse = await _httpClient.GetAsync(requestUri);
+                var responseObject = await GetNewestWeatherForecastToken(geoPlace.Latitude, geoPlace.Longitude);
 
-                if (httpResponse.IsSuccessStatusCode)
-                {
-                    var response = await httpResponse.Content.ReadAsStringAsync();
-                    var responseObject = JObject.Parse(response)["current"];
-                    var weather = new WeatherForecastDto(responseObject, geoPlaceId);
-
-                    // Check if exist in database
-                    var existingWeather = await _weatherForecastService.GetByDateAndGeoPlaceIdAsync(
-                        weather.Time,
-                        geoPlaceId);
-
-                    if (existingWeather == null)
-                    {
-                        weather.Id = await _weatherForecastService.AddAsync(weather);
-
-                        return weather;
-                    }
-                    else
-                    {
-                        await _weatherForecastService.UpdateAsync(existingWeather.Id, weather);
-
-                        return existingWeather;
-                    }
-                }
-                else
+                if (responseObject == null)
                 {
                     throw new Exception();
                 }
-                
+
+                var weather = new WeatherForecastDto(responseObject, geoPlaceId);
+
+                // Check if exist in database
+                var existingWeather = await _weatherForecastService.GetByDateAndGeoPlaceIdAsync(
+                    weather.Time,
+                    geoPlaceId);
+
+                if (existingWeather == null)
+                {
+                    weather.Id = await _weatherForecastService.AddAsync(weather);
+
+                    return weather;
+                }
+                else
+                {
+                    await _weatherForecastService.UpdateAsync(existingWeather.Id, weather);
+
+                    return existingWeather;
+                }
             }
             catch (Exception)
             {
@@ -121,6 +102,45 @@ namespace WeatherApi.Controllers
             await _weatherForecastService.RemoveAsync(id);
 
             return NoContent();
+        }
+
+        private async Task<JToken?> GetNewestWeatherForecastToken(float latitude, float longitude)
+        {
+            var requestUri = string.Format(
+                "https://api.open-meteo.com/v1/forecast?latitude={0}&longitude={1}",
+                latitude,
+                longitude);
+
+            requestUri += "&current=temperature_2m," +
+                "relative_humidity_2m," +
+                "apparent_temperature," +
+                "rain," +
+                "snowfall," +
+                "cloud_cover," +
+                "wind_speed_10m," +
+                "wind_direction_10m";
+
+            try
+            {
+                var httpResponse = await _httpClient.GetAsync(requestUri);
+
+                if (httpResponse.IsSuccessStatusCode)
+                {
+                    var response = await httpResponse.Content.ReadAsStringAsync();
+                    var responseObject = JObject.Parse(response)["current"];
+
+                    return responseObject;
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
     }
 }

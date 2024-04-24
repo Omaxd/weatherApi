@@ -7,13 +7,10 @@ using Service.Interface;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
 
-//var connectionString = builder.Configuration.GetConnectionString("LocalContext");
 builder.Services.AddDbContext<WeatherContext>(options => 
-    options.UseSqlServer(builder.Configuration.GetConnectionString("LocalContext")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("Azure2")));
 
 // services
 builder.Services.AddScoped<IGeoPlaceRepository, GeoPlaceRepository>();
@@ -37,6 +34,12 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
+        options.RoutePrefix = string.Empty;
+    });
     app.UseExceptionHandler("/Error");
     app.UseHsts();
 }

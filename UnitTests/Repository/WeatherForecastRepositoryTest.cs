@@ -1,10 +1,5 @@
 ﻿using Data.Model;
 using Data.Repository;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace UnitTests.Repository
 {
@@ -43,14 +38,14 @@ namespace UnitTests.Repository
         }
 
         [Test]
-        public void WeatherForecastRepositoryTest_RemoveWeatherForecast()
+        public async Task WeatherForecastRepositoryTest_RemoveWeatherForecast()
         {
             var dbContextMock = new WeatherContextMock();
             var weatherForecastRepository = new WeatherForecastRepository(dbContextMock);
 
             var expectedSum = dbContextMock.WeatherForecasts.Count() - 1;
 
-            weatherForecastRepository.RemoveAsync(1);
+            await weatherForecastRepository.RemoveAsync(1);
 
             Assert.AreEqual(expectedSum, dbContextMock.WeatherForecasts.Count());
         }
